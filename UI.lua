@@ -212,9 +212,39 @@ function UI:CreateRequestFrame()
     end)
     reqFrame.resetBtn = resetBtn
     
+    -- Item name / ID search (for items you don't have in your bags)
+    local searchLabel = reqFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    searchLabel:SetPoint("TOPLEFT", headerBg, "BOTTOMLEFT", 0, -65)
+    searchLabel:SetText("Or type item name / ID:")
+    searchLabel:SetTextColor(0.8, 0.8, 0.8)
+    reqFrame.searchLabel = searchLabel
+
+    local searchInput = CreateFrame("EditBox", nil, reqFrame, "InputBoxTemplate")
+    searchInput:SetSize(230, 22)
+    searchInput:SetPoint("LEFT", searchLabel, "RIGHT", 8, 0)
+    searchInput:SetAutoFocus(false)
+    searchInput:SetMaxLetters(64)
+    searchInput:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    searchInput:SetScript("OnEnterPressed", function()
+        UI:AddItemByName(reqFrame.searchInput:GetText())
+        reqFrame.searchInput:SetText("")
+        reqFrame.searchInput:ClearFocus()
+    end)
+    reqFrame.searchInput = searchInput
+
+    local searchBtn = CreateFrame("Button", nil, reqFrame, "UIPanelButtonTemplate")
+    searchBtn:SetSize(45, 22)
+    searchBtn:SetPoint("LEFT", searchInput, "RIGHT", 5, 0)
+    searchBtn:SetText("Add")
+    searchBtn:SetScript("OnClick", function()
+        UI:AddItemByName(reqFrame.searchInput:GetText())
+        reqFrame.searchInput:SetText("")
+    end)
+    reqFrame.searchBtn = searchBtn
+
     -- Gold input section
     local goldLabel = reqFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    goldLabel:SetPoint("TOPLEFT", headerBg, "BOTTOMLEFT", 0, -25)
+    goldLabel:SetPoint("TOPLEFT", searchLabel, "BOTTOMLEFT", 0, -20)
     goldLabel:SetText(L["REQUEST_TIP_LABEL"])
     reqFrame.goldLabel = goldLabel
     
@@ -453,6 +483,48 @@ function UI:CreateItemSlot(parent, index)
     end
     
     return slot
+end
+
+-- Add an item to the request form by name or numeric item ID
+function UI:AddItemByName(name)
+    if not name or name:match("^%s*$") then return end
+    name = name:match("^%s*(.-)%s*$")  -- trim whitespace
+
+    -- Find next empty slot
+    local targetSlot = nil
+    for i = 1, CONSTANTS.MAX_ITEMS_PER_ORDER do
+        if not reqFrame.items[i] then
+            targetSlot = i
+            break
+        end
+    end
+
+    if not targetSlot then
+        AzerothDash:Print("All item slots are full. Right-click a slot to remove an item.")
+        return
+    end
+
+    -- Accept either exact item names or numeric item IDs
+    local lookup = tonumber(name) or name
+    local itemName, itemLink, _, _, _, _, _, maxStack, _, texture = GetItemInfo(lookup)
+
+    if itemName and itemLink and texture then
+        reqFrame.slots[targetSlot]:Show()
+        reqFrame.items[targetSlot] = itemLink
+        reqFrame.slots[targetSlot].icon:SetTexture(texture)
+        reqFrame.slots[targetSlot].icon:Show()
+        reqFrame.slots[targetSlot]:GetNormalTexture():Hide()
+        if maxStack and maxStack > 1 then
+            reqFrame.slots[targetSlot].countBox:Show()
+            reqFrame.slots[targetSlot].countBox:SetText("1")
+        else
+            reqFrame.slots[targetSlot].countBox:Hide()
+        end
+        self:UpdatePlusButton()
+    else
+        AzerothDash:Print(string.format(
+            "'%s' not found. Use the exact name, an item ID, or hover the item in-game first to cache it.", name))
+    end
 end
 
 function UI:UpdatePlusButton()

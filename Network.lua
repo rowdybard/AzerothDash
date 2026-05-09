@@ -18,9 +18,9 @@ local function SerializeOrder(order)
     end
     
     -- Escape special characters in zone name, sender, and note
-    local zone = order.zone:gsub("\", "\\"):gsub("^", "\^")
-    local sender = order.sender:gsub("\", "\\"):gsub("^", "\^")
-    local note = (order.note or ""):gsub("\", "\\"):gsub("^", "\^"):gsub("~", "\~")
+    local zone = order.zone:gsub("\\", "\\\\"):gsub("%^", "\\^")
+    local sender = order.sender:gsub("\\", "\\\\"):gsub("%^", "\\^")
+    local note = (order.note or ""):gsub("\\", "\\\\"):gsub("%^", "\\^"):gsub("~", "\\~")
     
     local parts = {
         AzerothDash.DATA_VERSION,

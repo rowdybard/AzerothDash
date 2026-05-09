@@ -236,8 +236,10 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         AzerothDash:Print("/ad reset - Reset all settings")
     else
         -- Toggle main window
-        if AzerothDash.modules.UI then
+        if AzerothDash.modules.UI and AzerothDash.modules.UI.ToggleMainFrame then
             AzerothDash.modules.UI:ToggleMainFrame()
+        else
+            AzerothDash:Print("UI not ready yet. If this persists after login, type: /ad debug")
         end
     end
 end
