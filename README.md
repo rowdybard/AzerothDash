@@ -1,6 +1,6 @@
 # AzerothDash
 
-The "DoorDash" of Azeroth - a World of Warcraft addon for requesting items or delivering them for gold.
+An in-game item delivery and courier service addon for Burning Crusade Anniversary Classic. Request items delivered to you anywhere in Azeroth, or earn gold as a courier — think of it like a delivery app, but for WoW.
 
 ## Features
 

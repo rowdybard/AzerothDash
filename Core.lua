@@ -1,6 +1,6 @@
 --[[
     AzerothDash - Core Module
-    The "DoorDash" of Azeroth
+    In-game item delivery and courier service for Azeroth
     Version: 1.0.0
 ]]
 

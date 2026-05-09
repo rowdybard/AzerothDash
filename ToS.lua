@@ -51,7 +51,7 @@ local tutorialSlides = {
         content = [[
 |cffffd100Hi there! Welcome to AzerothDash!|r
 
-This addon helps you get items delivered (like DoorDash, but for WoW!)
+This addon helps you get items delivered anywhere in Azeroth!
 
 |cff00ff00Here's the simple version:|r
 • You need an item but don't want to travel? Ask for delivery!
