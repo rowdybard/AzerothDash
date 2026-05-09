@@ -134,22 +134,19 @@ function AzerothDash.events:PLAYER_LOGIN()
     self:LoadConfig()
     self:LoadLocalization()
     
-    -- Initialize all modules
-    if self.modules.ToS then
-        self.modules.ToS:OnLogin()
+    -- Initialize all modules (pcall so one crash doesn't block the rest)
+    local function SafeInit(name, mod)
+        if not mod then return end
+        local ok, err = pcall(function() mod:OnLogin() end)
+        if not ok then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [" .. name .. "] error:|r " .. tostring(err))
+        end
     end
-    if self.modules.Transactions then
-        self.modules.Transactions:OnLogin()
-    end
-    if self.modules.Network then
-        self.modules.Network:OnLogin()
-    end
-    if self.modules.UI then
-        self.modules.UI:OnLogin()
-    end
-    if self.modules.Minimap then
-        self.modules.Minimap:OnLogin()
-    end
+    SafeInit("ToS",          self.modules.ToS)
+    SafeInit("Transactions", self.modules.Transactions)
+    SafeInit("Network",      self.modules.Network)
+    SafeInit("UI",           self.modules.UI)
+    SafeInit("Minimap",      self.modules.Minimap)
     
     self:Print(self.strings["LOADED_MESSAGE"] or "AzerothDash loaded! Use /ad or click the minimap button.")
 end
@@ -236,10 +233,10 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         AzerothDash:Print("/ad reset - Reset all settings")
     else
         -- Toggle main window
-        if AzerothDash.modules.UI and AzerothDash.modules.UI.ToggleMainFrame then
+        if AzerothDash.modules.UI and AzerothDash.modules.UI:GetMainFrame() then
             AzerothDash.modules.UI:ToggleMainFrame()
         else
-            AzerothDash:Print("UI not ready yet. If this persists after login, type: /ad debug")
+            AzerothDash:Print("UI frame not created yet — check chat for red error messages above.")
         end
     end
 end
