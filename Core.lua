@@ -116,13 +116,7 @@ end
 function AzerothDash:Init()
     if self.state.isLoaded then return end
     
-    -- Load Config first
-    self:LoadConfig()
-    
-    -- Load Localization
-    self:LoadLocalization()
-    
-    -- Register remaining events
+    -- Only register events here; config/locale need PLAYER_LOGIN (UnitName is nil at ADDON_LOADED)
     self.eventFrame:RegisterEvent("PLAYER_LOGIN")
     self.eventFrame:RegisterEvent("PLAYER_LOGOUT")
     
@@ -135,6 +129,10 @@ AzerothDash.events = {}
 
 function AzerothDash.events:PLAYER_LOGIN()
     self:Debug("Player login")
+    
+    -- Load config and locale now that UnitName("player") is available
+    self:LoadConfig()
+    self:LoadLocalization()
     
     -- Initialize all modules
     if self.modules.ToS then
