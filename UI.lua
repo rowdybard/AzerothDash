@@ -1697,7 +1697,7 @@ StaticPopupDialogs["AZEROTHDASH_IMPORT_REP"] = {
 -- Position management
 function UI:SavePosition()
     local point, _, relPoint, x, y = mainFrame:GetPoint(1)
-    if point then
+    if point and db and db.window then
         db.window.point = point
         db.window.relPoint = relPoint
         db.window.x = x
@@ -1707,11 +1707,12 @@ function UI:SavePosition()
 end
 
 function UI:RestorePosition()
-    if db.window.point then
+    if db and db.window and db.window.point then
         mainFrame:ClearAllPoints()
         mainFrame:SetPoint(db.window.point, UIParent, db.window.relPoint or db.window.point, db.window.x, db.window.y)
     end
 end
+DEFAULT_CHAT_FRAME:AddMessage("AzerothDash: RestorePosition defined")
 
 -- Public methods
 function UI:ToggleMainFrame()
@@ -1737,3 +1738,5 @@ end
 function UI:GetMainFrame()
     return mainFrame
 end
+
+DEFAULT_CHAT_FRAME:AddMessage("AzerothDash: UI.lua loaded completely")

@@ -131,8 +131,17 @@ function AzerothDash.events:PLAYER_LOGIN()
     self:Debug("Player login")
     
     -- Load config and locale now that UnitName("player") is available
-    self:LoadConfig()
-    self:LoadLocalization()
+    local ok, err = pcall(function() self:LoadConfig() end)
+    if not ok then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [LoadConfig] error:|r " .. tostring(err))
+        return
+    end
+    
+    ok, err = pcall(function() self:LoadLocalization() end)
+    if not ok then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [LoadLocalization] error:|r " .. tostring(err))
+        return
+    end
     
     -- Initialize all modules (pcall so one crash doesn't block the rest)
     local function SafeInit(name, mod)
