@@ -604,6 +604,37 @@ function ToS:IsPlayerBlocked(playerName)
     return db.blockedSenders[playerName] ~= nil
 end
 
+-- Classic-compatible friend check (C_FriendList.IsFriend doesn't exist in TBC Classic)
+local function IsFriendCompat(name)
+    -- Try modern API first (Retail)
+    if C_FriendList and C_FriendList.GetFriendInfoByName then
+        local info = C_FriendList.GetFriendInfoByName(name)
+        return info ~= nil
+    end
+    -- TBC Classic fallback: iterate friend list
+    local numFriends = GetNumFriends and GetNumFriends() or 0
+    for i = 1, numFriends do
+        local friendName = GetFriendInfo(i)
+        if friendName and friendName:lower() == name:lower() then
+            return true
+        end
+    end
+    return false
+end
+
+-- Classic-compatible guild member check (IsGuildMember global doesn't exist)
+local function IsGuildMemberCompat(name)
+    if not IsInGuild() then return false end
+    local numMembers = GetNumGuildMembers and GetNumGuildMembers() or 0
+    for i = 1, numMembers do
+        local memberName = GetGuildRosterInfo(i)
+        if memberName and memberName:lower() == name:lower() then
+            return true
+        end
+    end
+    return false
+end
+
 -- Filter orders based on safety settings
 function ToS:ShouldShowOrder(order)
     -- Check if globally blocked
@@ -613,14 +644,14 @@ function ToS:ShouldShowOrder(order)
     
     -- Check friends only mode
     if db.friendsOnlyMode then
-        if not C_FriendList.IsFriend(order.sender) then
+        if not IsFriendCompat(order.sender) then
             return false
         end
     end
     
     -- Check guild only mode
     if db.guildOnlyMode then
-        if not IsInGuild() or not IsGuildMember(order.sender) then
+        if not IsInGuild() or not IsGuildMemberCompat(order.sender) then
             return false
         end
     end

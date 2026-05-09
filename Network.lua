@@ -271,7 +271,7 @@ function Network:OnAddonMessage(prefix, message, channel, sender)
     
     -- Play sound
     if AzerothDash.db.global.soundEnabled then
-        PlaySound(SOUNDKIT.UI_GROUP_FINDER_RECEIVE_APPLICATION, "Master")
+        PlaySound(SOUNDKIT.READY_CHECK, "Master") -- READY_CHECK exists since TBC (patch 2.0)
     end
     
     -- Notify available couriers (enhanced notification)

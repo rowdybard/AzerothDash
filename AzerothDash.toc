@@ -1,11 +1,11 @@
-## Interface: 110105
+## Interface: 20504
 ## Title: AzerothDash
-## Notes: The DoorDash of Azeroth! Request item deliveries or earn gold as a courier. Safe, verified trades with reputation tracking.
+## Notes: The DoorDash of Azeroth! Request item deliveries or earn gold as a courier. Safe, verified trades with reputation tracking. (Burning Crusade Classic)
 ## Author: AzerothDash Team
 ## Version: 1.0.0
 ## SavedVariables: AzerothDashDB, AzerothDashCache
 ## SavedVariablesPerCharacter: AzerothDashCharDB
-## X-Category: Inventory
+## X-Category: Auction & Economy
 ## X-License: MIT
 ## X-Website: https://github.com/azerothdash/azerothdash
 ## X-Curse-Project-ID: 

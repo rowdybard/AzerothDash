@@ -118,8 +118,10 @@ View and manage player reputation:
 
 ## Compatibility
 
-- **Retail WoW**: Version 11.1.5+
-- **Classic**: Not currently supported (different API)
+- **Burning Crusade Anniversary Classic**: 2.5.4 (Interface 20504) ✅
+- **TBC Classic (original)**: 2.5.4 ✅
+- **Classic Era / Vanilla**: Untested — may work but not officially supported
+- **Retail WoW**: Not supported (different interface version)
 
 ## Development
 

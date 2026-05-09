@@ -370,7 +370,7 @@ function Transactions:ProcessAccept(tx, dasher, data)
     AzerothDash:Print(dasher .. " has accepted your order and is on their way!")
     
     if AzerothDash.db.global.soundEnabled then
-        PlaySound(SOUNDKIT.UI_GROUP_FINDER_RECEIVE_APPLICATION, "Master")
+        PlaySound(SOUNDKIT.READY_CHECK, "Master") -- READY_CHECK exists since TBC (patch 2.0)
     end
     
     -- Update UI - switch requester to Active tab
@@ -390,7 +390,7 @@ function Transactions:ProcessDelivered(tx, dasher)
     AzerothDash:Print("Please confirm receipt after checking the items, or report an issue if there's a problem.")
     
     if AzerothDash.db.global.soundEnabled then
-        PlaySound(SOUNDKIT.UI_BNET_NEW_NOTIFICATION, "Master")
+        PlaySound(SOUNDKIT.TELL_MESSAGE, "Master") -- Tell sound exists since vanilla
     end
     
     -- Update UI - switch to Active tab and show popup
@@ -476,7 +476,7 @@ function Transactions:HandleAcceptNotification(orderID, dasher, data)
             AzerothDash:Print(dasher .. " has accepted your order and is on their way!")
             
             if AzerothDash.db.global.soundEnabled then
-                PlaySound(SOUNDKIT.UI_GROUP_FINDER_RECEIVE_APPLICATION, "Master")
+                PlaySound(SOUNDKIT.READY_CHECK, "Master")
             end
             
             if AzerothDash.modules.UI then

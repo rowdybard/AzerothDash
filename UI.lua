@@ -852,7 +852,7 @@ function UI:SetupCourierNotifications()
                 
                 -- Play sound
                 if db.notifications.sound then
-                    PlaySound(SOUNDKIT.UI_GROUP_FINDER_RECEIVE_APPLICATION, "Master")
+                    PlaySound(SOUNDKIT.READY_CHECK, "Master") -- READY_CHECK exists since TBC
                 end
                 
                 -- Visual notification
