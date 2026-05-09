@@ -60,13 +60,13 @@ local function DeserializeOrder(msg)
         return nil
     end
     
-    local zone = parts[4]:gsub("\\", "\"):gsub("\^", "^")
+    local zone = parts[4]:gsub("\\\\", "\\"):gsub("\\%^", "^")
     local x = tonumber(parts[5]) or 0
     local y = tonumber(parts[6]) or 0
-    local sender = parts[7]:gsub("\\", "\"):gsub("\^", "^")
+    local sender = parts[7]:gsub("\\\\", "\\"):gsub("\\%^", "^")
     local class = parts[8]
     local orderID = parts[9]
-    local note = (parts[11] or ""):gsub("\\", "\"):gsub("\^", "^"):gsub("\~", "~")
+    local note = (parts[11] or ""):gsub("\\\\", "\\"):gsub("\\%^", "^"):gsub("\\~", "~")
     
     -- Parse items (everything between position 10 and the note)
     local items = {}

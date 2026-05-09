@@ -594,7 +594,7 @@ function UI:OnBroadcastClick()
     -- Get note
     local note = reqFrame.noteInput:GetText()
     if note and #note > 0 then
-        note = note:gsub("\^", ""):gsub("~", "") -- Remove special characters used in serialization
+        note = note:gsub("%^", ""):gsub("~", "") -- Remove special characters used in serialization
     end
     
     -- Send order
