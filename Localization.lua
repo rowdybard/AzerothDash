@@ -189,15 +189,15 @@ function AzerothDash:LoadLocalization()
         locale = "enUS"
     end
     
-    self.L = locales[locale]
+    self.strings = locales[locale]
     
     -- Make L available globally for modules
-    _G.ADL = self.L
+    _G.ADL = self.strings
 end
 
 -- Get localized string with formatting
 function AzerothDash:L(key, ...)
-    local str = self.L and self.L[key] or key
+    local str = self.strings and self.strings[key] or key
     if ... then
         return string.format(str, ...)
     end

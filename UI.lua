@@ -7,10 +7,10 @@ local _, AzerothDash = ...
 local UI = {}
 AzerothDash:RegisterModule("UI", UI)
 
--- Local references
-local L = AzerothDash.L
+-- Local references (assigned in OnLogin after LoadLocalization runs)
+local L
 local db
-local CONSTANTS = AzerothDash.CONSTANTS
+local CONSTANTS
 
 -- UI Elements
 local mainFrame, reqFrame, dashFrame
@@ -27,7 +27,9 @@ function UI:Init()
 end
 
 function UI:OnLogin()
+    L = AzerothDash.strings    -- locale table set by LoadLocalization() before PLAYER_LOGIN fires
     db = AzerothDash.db.profile
+    CONSTANTS = AzerothDash.CONSTANTS
     scaleFactor = AzerothDash:GetScaleFactor()
     
     self:CreateMainFrame()

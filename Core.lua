@@ -91,8 +91,8 @@ end
 
 -- Print wrapper
 function AzerothDash:Print(msg)
-    if self.L and self.L["PRINT_PREFIX"] then
-        DEFAULT_CHAT_FRAME:AddMessage(self.L["PRINT_PREFIX"] .. " " .. msg)
+    if self.strings and self.strings["PRINT_PREFIX"] then
+        DEFAULT_CHAT_FRAME:AddMessage(self.strings["PRINT_PREFIX"] .. " " .. msg)
     else
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ccff[AzerothDash]|r " .. msg)
     end
@@ -153,7 +153,7 @@ function AzerothDash.events:PLAYER_LOGIN()
         self.modules.Minimap:OnLogin()
     end
     
-    self:Print(self.L["LOADED_MESSAGE"] or "AzerothDash loaded! Use /ad or click the minimap button.")
+    self:Print(self.strings["LOADED_MESSAGE"] or "AzerothDash loaded! Use /ad or click the minimap button.")
 end
 
 function AzerothDash.events:PLAYER_LOGOUT()
