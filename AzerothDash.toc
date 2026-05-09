@@ -1,16 +1,18 @@
 ## Interface: 110105
 ## Title: AzerothDash
-## Notes: The DoorDash of WoW. Request items or have them delivered for gold!
+## Notes: The DoorDash of Azeroth! Request item deliveries or earn gold as a courier. Safe, verified trades with reputation tracking.
 ## Author: AzerothDash Team
-## Version: 2.0.0
+## Version: 1.0.0
 ## SavedVariables: AzerothDashDB, AzerothDashCache
 ## SavedVariablesPerCharacter: AzerothDashCharDB
 ## X-Category: Inventory
 ## X-License: MIT
 ## X-Website: https://github.com/azerothdash/azerothdash
-## X-Curse-Project-ID: 123456
-## X-WoWI-ID: 123456
-## X-Wago-ID: 123456
+## X-Curse-Project-ID: 
+## X-WoWI-ID: 
+## X-Wago-ID: 
+## X-Discord: 
+## X-BugReport: https://github.com/azerothdash/azerothdash/issues
 
 # Core files
 Core.lua
@@ -18,6 +20,7 @@ Config.lua
 Localization.lua
 Utils.lua
 ToS.lua
+Transactions.lua
 Network.lua
 UI.lua
 Minimap.lua

@@ -17,9 +17,10 @@ local function SerializeOrder(order)
         table.insert(items, item.link .. "~" .. item.count)
     end
     
-    -- Escape special characters in zone name
+    -- Escape special characters in zone name, sender, and note
     local zone = order.zone:gsub("\", "\\"):gsub("^", "\^")
     local sender = order.sender:gsub("\", "\\"):gsub("^", "\^")
+    local note = (order.note or ""):gsub("\", "\\"):gsub("^", "\^"):gsub("~", "\~")
     
     local parts = {
         AzerothDash.DATA_VERSION,
@@ -31,7 +32,8 @@ local function SerializeOrder(order)
         sender,
         order.class or "PRIEST",
         order.orderID or AzerothDash:GenerateOrderID(),
-        table.concat(items, "^")
+        table.concat(items, "^"),
+        note
     }
     
     return table.concat(parts, "^")
@@ -64,11 +66,13 @@ local function DeserializeOrder(msg)
     local sender = parts[7]:gsub("\\", "\"):gsub("\^", "^")
     local class = parts[8]
     local orderID = parts[9]
+    local note = (parts[11] or ""):gsub("\\", "\"):gsub("\^", "^"):gsub("\~", "~")
     
-    -- Parse items
+    -- Parse items (everything between position 10 and the note)
     local items = {}
     for i = 10, #parts do
-        if parts[i] and parts[i] ~= "" then
+        -- Stop when we hit the note field (no ~ in note field, so if it has ~ it's an item)
+        if parts[i] and parts[i] ~= "" and parts[i]:match("~") then
             local link, count = strsplit("~", parts[i])
             count = tonumber(count) or 1
             if link and link ~= "" then
@@ -91,6 +95,7 @@ local function DeserializeOrder(msg)
         sender = sender,
         class = class,
         timestamp = GetTime(),
+        note = note,
     }
 end
 
@@ -114,7 +119,7 @@ function Network:JoinChannel()
 end
 
 -- Send order to network
-function Network:BroadcastOrder(items, reward)
+function Network:BroadcastOrder(items, reward, note)
     -- Check throttle
     local ok, remaining = AzerothDash:CheckThrottle("send")
     if not ok then
@@ -137,6 +142,7 @@ function Network:BroadcastOrder(items, reward)
         y = y,
         sender = sender,
         class = class,
+        note = note,
     }
     
     -- Serialize and send
@@ -167,46 +173,36 @@ function Network:BroadcastOrder(items, reward)
     end
 end
 
--- Accept an order
+-- Accept an order (delegate to Transactions module)
 function Network:AcceptOrder(orderIndex)
-    local order = AzerothDash.state.availableOrders[orderIndex]
-    if not order then
-        AzerothDash:Print(AzerothDash:L("ERROR_ORDER_NOT_FOUND"))
-        return false
+    if AzerothDash.modules.Transactions then
+        return AzerothDash.modules.Transactions:AcceptOrder(orderIndex)
     end
-    
-    if order.sender == UnitName("player") then
-        AzerothDash:Print(AzerothDash:L("ERROR_SELF_DELIVER"))
-        return false
+    return false
+end
+
+-- Mark order as delivered (delegate to Transactions)
+function Network:MarkDelivered(orderID)
+    if AzerothDash.modules.Transactions then
+        return AzerothDash.modules.Transactions:MarkDelivered(orderID)
     end
-    
-    -- Build item summary
-    local firstItem = order.items[1]
-    local itemSummary = (firstItem.count > 1 and (firstItem.count .. "x ") or "") .. firstItem.link
-    if #order.items > 1 then
-        itemSummary = itemSummary .. " " .. string.format(AzerothDash:L("ORDER_PLUS_MORE"), #order.items - 1)
+    return false
+end
+
+-- Confirm receipt (delegate to Transactions)
+function Network:ConfirmReceipt(orderID)
+    if AzerothDash.modules.Transactions then
+        return AzerothDash.modules.Transactions:ConfirmReceipt(orderID)
     end
-    
-    -- Send whisper
-    local message = string.format("AzerothDash: I accepted your order for %s! I'm coming to %s!", itemSummary, order.zone)
-    SendChatMessage(message, "WHISPER", nil, order.sender)
-    
-    -- Notify player
-    AzerothDash:Print(string.format(AzerothDash:L("SUCCESS_ACCEPTED"), order.zone))
-    
-    -- Remove from available
-    table.remove(AzerothDash.state.availableOrders, orderIndex)
-    
-    -- Update stats
-    AzerothDash.charDB.deliveryStats.completed = AzerothDash.charDB.deliveryStats.completed + 1
-    AzerothDash.charDB.deliveryStats.earned = AzerothDash.charDB.deliveryStats.earned + order.reward
-    
-    -- Update UI
-    if AzerothDash.modules.UI then
-        AzerothDash.modules.UI:UpdateOrderList()
+    return false
+end
+
+-- Report issue (delegate to Transactions)
+function Network:ReportIssue(orderID, reason)
+    if AzerothDash.modules.Transactions then
+        return AzerothDash.modules.Transactions:ReportIssue(orderID, reason)
     end
-    
-    return true
+    return false
 end
 
 -- Handle incoming addon messages
@@ -278,6 +274,11 @@ function Network:OnAddonMessage(prefix, message, channel, sender)
         PlaySound(SOUNDKIT.UI_GROUP_FINDER_RECEIVE_APPLICATION, "Master")
     end
     
+    -- Notify available couriers (enhanced notification)
+    if AzerothDash.modules.UI then
+        AzerothDash.modules.UI:NotifyCouriersOfOrder(order)
+    end
+    
     -- Update UI
     if AzerothDash.modules.UI then
         AzerothDash.modules.UI:UpdateOrderList()
@@ -286,8 +287,9 @@ end
 
 -- Event handlers
 function Network:OnLogin()
-    -- Register for addon messages
+    -- Register for addon messages (both prefixes must be registered)
     C_ChatInfo.RegisterAddonMessagePrefix(CONSTANTS.COMM_PREFIX)
+    C_ChatInfo.RegisterAddonMessagePrefix(CONSTANTS.COMM_PREFIX .. "_TX")
     
     -- Join channel
     self:JoinChannel()

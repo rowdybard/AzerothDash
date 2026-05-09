@@ -21,6 +21,7 @@ local defaults = {
         tosAgreementVersion = 0,      -- Track ToS agreement
         auditLog = {},                -- Transaction audit trail
         blockedSenders = {},          -- Reported/blocked players
+        communityReputation = {},     -- Imported reputation data from community
     },
     profile = {
         window = {
@@ -49,6 +50,13 @@ local defaults = {
             visual = true,
             chat = false,
         },
+        courier = {
+            available = false,           -- Courier is available for deliveries
+            autoNotify = true,           -- Auto-notify when available
+            notifyOnNewOrder = true,     -- Play sound when new orders appear
+            autoWhisper = false,         -- Auto-whisper requester when accepting (already happens)
+            preferredZones = {},         -- Zones courier prefers to deliver to
+        },
     },
     char = {
         preferredZone = nil,
@@ -70,6 +78,10 @@ local defaults = {
             lastReset = 0,
             lastGoldReset = 0,
         },
+        -- Active transactions (orders I'm involved in)
+        activeTransactions = {},
+        -- Reputation/trust scores for other players
+        playerReputation = {},
     },
 }
 

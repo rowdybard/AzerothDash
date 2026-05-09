@@ -182,3 +182,115 @@ function AzerothDash:TableFilter(tbl, predicate)
     end
     return result
 end
+
+-- Serialize reputation data for export (simple CSV-like format)
+function AzerothDash:SerializeReputation(data)
+    local parts = {}
+    table.insert(parts, "AZDREPv" .. (data.version or 1))
+    table.insert(parts, "EXPORTER:" .. (data.exportedBy or "Unknown"))
+    table.insert(parts, "TIME:" .. (data.exportedAt or GetTime()))
+    
+    for playerName, rep in pairs(data.reputation or {}) do
+        local line = string.format("%s,%d,%d,%d,%s", 
+            playerName, 
+            rep.score or 50, 
+            rep.completed or 0, 
+            rep.disputed or 0,
+            rep.reason or ""
+        )
+        table.insert(parts, line)
+    end
+    
+    return table.concat(parts, ";")
+end
+
+-- Deserialize and import reputation data
+function AzerothDash:ImportReputation(dataString)
+    if not dataString or dataString == "" then
+        self:Print("No data to import.")
+        return false
+    end
+    
+    -- Parse the data
+    local parts = {strsplit(";", dataString)}
+    
+    -- Check version
+    local header = parts[1]
+    if not header or not header:match("^AZDREPv%d+") then
+        self:Print("Invalid reputation data format.")
+        return false
+    end
+    
+    local version = tonumber(header:match("v(%d+)")) or 1
+    
+    -- Parse exporter info
+    local exporter = "Unknown"
+    local exportTime = GetTime()
+    
+    for i = 2, math.min(3, #parts) do
+        local part = parts[i]
+        if part:match("^EXPORTER:") then
+            exporter = part:gsub("^EXPORTER:", "")
+        elseif part:match("^TIME:") then
+            exportTime = tonumber(part:gsub("^TIME:", "")) or GetTime()
+        end
+    end
+    
+    -- Initialize community reputation if needed
+    if not self.db.global.communityReputation then
+        self.db.global.communityReputation = {}
+    end
+    
+    local imported = 0
+    local startIdx = 4
+    if version == 1 then
+        -- Skip header lines to find data
+        for i = 2, #parts do
+            local part = parts[i]
+            if not part:match("^EXPORTER:") and not part:match("^TIME:") and part:match("," ) then
+                startIdx = i
+                break
+            end
+        end
+    end
+    
+    -- Parse player entries
+    for i = startIdx, #parts do
+        local line = parts[i]
+        if line and line ~= "" and line:match(",") then
+            local values = {strsplit(",", line)}
+            if #values >= 4 then
+                local playerName = values[1]
+                local score = tonumber(values[2]) or 50
+                local completed = tonumber(values[3]) or 0
+                local disputed = tonumber(values[4]) or 0
+                local reason = values[5] or "Community reported"
+                
+                -- Only import if score is low or has disputes
+                if score < 50 or disputed > 0 then
+                    -- Don't overwrite personal experience with community data
+                    if not self.db.global.communityReputation[playerName] then
+                        self.db.global.communityReputation[playerName] = {
+                            score = score,
+                            completed = completed,
+                            disputed = disputed,
+                            reason = reason,
+                            importedFrom = exporter,
+                            importedAt = GetTime(),
+                        }
+                        imported = imported + 1
+                    end
+                end
+            end
+        end
+    end
+    
+    self:Print(string.format("Imported %d players from %s's reputation list.", imported, exporter))
+    
+    -- Update UI if visible
+    if self.modules.UI and self.modules.UI.UpdateReputationList then
+        self.modules.UI:UpdateReputationList()
+    end
+    
+    return true
+end

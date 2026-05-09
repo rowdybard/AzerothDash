@@ -13,6 +13,55 @@ local locales = {
         -- Tab labels
         TAB_REQUEST = "Request",
         TAB_DELIVER = "Deliver",
+        TAB_ACTIVE = "Active",
+        
+        -- Active orders
+        ACTIVE_EMPTY = "No active orders",
+        ACTIVE_STATUS_PENDING = "Pending",
+        ACTIVE_STATUS_ACCEPTED = "Accepted",
+        ACTIVE_STATUS_DELIVERED = "Delivered",
+        ACTIVE_STATUS_COMPLETED = "Completed",
+        ACTIVE_STATUS_DISPUTED = "Disputed",
+        ACTIVE_STATUS_CANCELLED = "Cancelled",
+        ACTIVE_STATUS_EXPIRED = "Expired",
+        
+        ACTIVE_ACTION_CANCEL = "Cancel",
+        ACTIVE_ACTION_CONFIRM = "Confirm",
+        ACTIVE_ACTION_ISSUE = "Issue",
+        ACTIVE_ACTION_MARK_DELIVERED = "Mark Delivered",
+        ACTIVE_WAITING_DELIVERY = "Waiting for delivery...",
+        ACTIVE_WAITING_CONFIRM = "Waiting for confirmation...",
+        
+        -- Delivery notification
+        DELIVERY_NOTIFICATION = "%s has delivered your order:\n%s\n\nConfirm receipt?",
+        DELIVERY_CONFIRM_BTN = "Confirm",
+        DELIVERY_ISSUE_BTN = "Report Issue",
+        DELIVERY_LATER_BTN = "Later",
+        
+        -- Reputation
+        REPUTATION_SCORE = "Trust: %d%%",
+        TAB_REPUTATION = "Reputation",
+        
+        -- Tutorial
+        TUTORIAL_STEP = "Step %d of %d",
+        TUTORIAL_TYPE_I_AGREE = "Type 'I AGREE' to continue:",
+        TUTORIAL_NEXT = "Next →",
+        TUTORIAL_BACK = "← Back",
+        TUTORIAL_I_AGREE_CONTINUE = "I Agree & Continue",
+        TUTORIAL_REPLAY = "Replay tutorial with /ad tutorial",
+        REPUTATION_TITLE = "Community Reputation",
+        REPUTATION_SUBTITLE = "Reported players and trust scores from your transactions",
+        REPUTATION_SHOW_BAD = "Bad Only",
+        REPUTATION_SHOW_ALL = "All",
+        REPUTATION_EMPTY = "No reputation data available",
+        REPUTATION_EXPORT = "Export",
+        REPUTATION_IMPORT = "Import",
+        REPUTATION_EXPORT_TIP = "Copy reputation data to share with others",
+        REPUTATION_IMPORT_TIP = "Import reputation data from community",
+        REPUTATION_BLOCK = "Block",
+        REPUTATION_UNBLOCK = "Unblock",
+        REPUTATION_EXPORT_TEXT = "Copy this data to share with your guild/friends:",
+        REPUTATION_IMPORT_TEXT = "Paste reputation data from community:",
         
         -- Request tab
         REQUEST_HEADER = "New Delivery Request",
@@ -36,6 +85,18 @@ local locales = {
         ORDER_LOCATION_FORMAT = "Location: %s (%.1f, %.1f)",
         ORDER_ITEMS_LABEL = "Items:",
         ORDER_PLUS_MORE = "(+%d more)",
+        ORDER_NOTE_LABEL = "Note:",
+        
+        -- Courier status
+        COURIER_STATUS = "Courier Status:",
+        COURIER_AVAILABLE = "I am available for deliveries",
+        COURIER_NOW_AVAILABLE = "You are now marked as available for deliveries!",
+        COURIER_OFFLINE = "You are now offline for deliveries.",
+        COURIER_NOTIFY = "Notify me of new orders",
+        
+        -- Note to courier
+        REQUEST_NOTE_LABEL = "Note to Courier:",
+        REQUEST_NOTE_HINT = "E.g., 'At Stormwind Inn' or 'Whisper me when ready'",
         
         -- Tooltips
         TOOLTIP_MINIMAP = "AzerothDash",

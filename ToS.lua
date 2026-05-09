@@ -9,6 +9,7 @@ AzerothDash:RegisterModule("ToS", ToS)
 
 -- Current ToS agreement version (bump when terms change)
 local TOS_VERSION = 1
+local TUTORIAL_VERSION = 1  -- Bump when tutorial content changes
 
 -- Local references
 local CONSTANTS = AzerothDash.CONSTANTS
@@ -23,8 +24,16 @@ function ToS:OnLogin()
     db = AzerothDash.db.global
     charDB = AzerothDash.charDB
     
-    -- Check if user has agreed to current ToS
-    if db.tosAgreementVersion < TOS_VERSION then
+    -- Initialize tutorial tracking
+    if not db.tutorialCompleted then
+        db.tutorialCompleted = 0
+    end
+    
+    -- Show tutorial for first-time users
+    if db.tutorialCompleted < TUTORIAL_VERSION then
+        self:ShowTutorial()
+    elseif db.tosAgreementVersion < TOS_VERSION then
+        -- Tutorial done but need ToS agreement
         self:ShowToSDialog()
     end
     
@@ -32,6 +41,333 @@ function ToS:OnLogin()
     self:ResetRateLimitsIfNeeded()
     
     AzerothDash:Debug("ToS module initialized")
+end
+
+-- Tutorial slides content
+local tutorialSlides = {
+    {
+        title = "Welcome to AzerothDash!",
+        icon = "Interface\\Icons\\INV_Misc_Bag_10_Green",
+        content = [[
+|cffffd100Hi there! Welcome to AzerothDash!|r
+
+This addon helps you get items delivered (like DoorDash, but for WoW!)
+
+|cff00ff00Here's the simple version:|r
+• You need an item but don't want to travel? Ask for delivery!
+• You want to make gold by helping others? Be a dasher!
+• Everyone wins!
+
+Think of it like this: You're at home and want pizza. Instead of going to the pizza place, you pay someone to bring it to you. Same idea, but with WoW items!
+
+Click "Next" to learn how it works!
+        ]],
+    },
+    {
+        title = "How It Works (Super Simple!)",
+        icon = "Interface\\Icons\\inv_misc_note_01",
+        content = [[
+|cffffd100How to Request an Item:|r
+
+1. Open AzerothDash (click the bag icon on your minimap)
+2. Drag the item you want from your bags
+3. Type how much gold you'll pay (the "tip")
+4. Click "Broadcast Order"
+5. Wait for someone to accept!
+
+|cffffd100How to Deliver (Make Gold!):|r
+
+1. Open AzerothDash
+2. Click "Deliver" tab
+3. See what people need
+4. Click "Dash" on an order you can fill
+5. Buy/trade for the item
+6. Meet them and trade!
+7. Get paid!
+
+|cff888888It's like being a delivery driver, but in Azeroth!|r
+        ]],
+    },
+    {
+        title = "Safety First! 🛡️",
+        icon = "Interface\\Icons\\inv_shield_04",
+        content = [[
+|cffffd100Staying Safe (Read This!)|r
+
+|cff00ff00For Requesters (People Ordering):|r
+• Only pay AFTER you get the item (in the trade window)
+• The dasher will mark "Delivered" - you click "Confirm" when you have the item
+• If something goes wrong, click "Issue" to report it
+
+|cff00ff00For Dashers (People Delivering):|r
+• Only give the item AFTER they put gold in the trade window
+• Mark "Delivered" only after you've actually traded
+• The requester must confirm - that's your proof!
+
+|cff00ccffThe addon tracks everything, so if someone scams, everyone will know!|r
+
+|cff888888Golden Rule: Never trade outside the game. Always use the trade window!|r
+        ]],
+    },
+    {
+        title = "The Golden Rules 📜",
+        icon = "Interface\\Icons\\inv_misc_book_09",
+        content = [[
+|cffffd100Promise to Be a Good Citizen|r
+
+By using this addon, you agree to:
+
+✓ |cff00ff00BE HONEST|r - Don't scam people. It's a game, but real people are behind the characters.
+
+✓ |cff00ff00BE FAIR|r - Pay what you promised. Deliver what you promised.
+
+✓ |cff00ff00BE KIND|r - Mistakes happen. Communicate if there's a problem.
+
+✓ |cff00ff00NO RMT|r - This is NOT for buying/selling gold with real money.
+
+✓ |cff00ff00NO EXPLOITS|r - Don't use this to move gold between your own accounts.
+
+|cff888888Scammers get reported and their reputation score goes down. Bad actors get blocked by the community.|r
+
+Click "Next" to read the official Terms of Service.
+        ]],
+    },
+    {
+        title = "Terms of Service (The Serious Stuff)",
+        icon = "Interface\\Icons\\inv_scroll_01",
+        content = [[
+|cffffd100Official Rules You Must Follow:|r
+
+1. |cffff0000NO Real Money Trading|r - This addon is for in-game gold only.
+
+2. |cffff0000NO Commercial Use|r - Don't use this to run a business or sell services.
+
+3. |cffff0000NO Gold Laundering|r - Don't use this to move gold between your alts.
+
+4. |cffff0000Respect the Limits|r - Max 5000g per order, max 10 orders per hour.
+
+5. |cffff0000Blizzard's Rules Apply|r - This addon follows WoW's Terms of Service.
+
+6. |cffff0000You Can Be Reported|r - Bad actors can be reported and blocked.
+
+|cff888888Breaking these rules can get you banned from WoW. Don't risk it!|r
+        ]],
+    },
+    {
+        title = "Your Pledge 🤝",
+        icon = "Interface\\Icons\\spell_holy_heal",
+        content = [[
+|cffffd100Final Step: Your Promise|r
+
+Type the following in the box below to continue:
+
+|cff00ccff"I promise to use AzerothDash honestly and fairly. I will not scam others, and I understand that scammers get reported and blocked. I will follow WoW's Terms of Service."|r
+
+(You don't have to type the whole thing - just type: |cff00ff00I AGREE|r)
+
+This is your digital handshake. Be a good person, and everyone benefits!
+
+|cff888888Communities thrive when people help each other. Let's make Azeroth a better place, one delivery at a time!|r
+        ]],
+        requireText = "I AGREE",
+    },
+}
+
+-- Tutorial wizard
+function ToS:ShowTutorial()
+    local currentSlide = 1
+    local tutorialFrame = nil
+    local L = AzerothDash.L
+    
+    local function ShowSlide(index)
+        local slide = tutorialSlides[index]
+        if not slide then
+            -- Tutorial complete
+            db.tutorialCompleted = TUTORIAL_VERSION
+            tutorialFrame:Hide()
+            -- Now show ToS dialog
+            self:ShowToSDialog()
+            return
+        end
+        
+        -- Update frame content
+        tutorialFrame.titleText:SetText(slide.title)
+        tutorialFrame.icon:SetTexture(slide.icon)
+        tutorialFrame.contentText:SetText(slide.content)
+        
+        -- Update page counter
+        tutorialFrame.pageText:SetText(string.format("Step %d of %d", index, #tutorialSlides))
+        
+        -- Show/hide text input for pledge slide
+        if slide.requireText then
+            tutorialFrame.editBox:Show()
+            tutorialFrame.editBox:SetText("")
+            tutorialFrame.editBox:SetFocus()
+            tutorialFrame.nextBtn:Disable()
+        else
+            tutorialFrame.editBox:Hide()
+            tutorialFrame.nextBtn:Enable()
+        end
+        
+        -- Update button text
+        if index == #tutorialSlides then
+            tutorialFrame.nextBtn:SetText("I Agree & Continue")
+        else
+            tutorialFrame.nextBtn:SetText("Next →")
+        end
+        
+        -- Enable/disable back button
+        if index == 1 then
+            tutorialFrame.backBtn:Disable()
+        else
+            tutorialFrame.backBtn:Enable()
+        end
+    end
+    
+    -- Create tutorial frame
+    tutorialFrame = CreateFrame("Frame", "AzerothDashTutorial", UIParent, "BasicFrameTemplateWithInset")
+    tutorialFrame:SetSize(600, 500)
+    tutorialFrame:SetPoint("CENTER")
+    tutorialFrame:SetFrameStrata("DIALOG")
+    tutorialFrame:SetMovable(true)
+    tutorialFrame:EnableMouse(true)
+    tutorialFrame:RegisterForDrag("LeftButton")
+    tutorialFrame:SetScript("OnDragStart", tutorialFrame.StartMoving)
+    tutorialFrame:SetScript("OnDragStop", tutorialFrame.StopMovingOrSizing)
+    tutorialFrame:SetScript("OnHide", function()
+        -- Ensure tutorial completion is tracked
+        if currentSlide <= #tutorialSlides then
+            -- User closed early, mark as completed anyway to not annoy
+            db.tutorialCompleted = TUTORIAL_VERSION
+        end
+    end)
+    
+    -- Block interaction with rest of game
+    tutorialFrame:EnableKeyboard(true)
+    tutorialFrame:SetPropagateKeyboardInput(false)
+    
+    -- Title
+    local titleBg = tutorialFrame.TitleBg or tutorialFrame:CreateTexture(nil, "BACKGROUND")
+    titleBg:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-CharacterTab-Highlight")
+    titleBg:SetPoint("TOP", 0, -8)
+    titleBg:SetSize(580, 30)
+    
+    local titleText = tutorialFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    titleText:SetPoint("TOP", 0, -15)
+    titleText:SetText("Welcome!")
+    tutorialFrame.titleText = titleText
+    
+    -- Icon
+    local icon = tutorialFrame:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(64, 64)
+    icon:SetPoint("TOPLEFT", 20, -50)
+    tutorialFrame.icon = icon
+    
+    -- Content text
+    local contentText = tutorialFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    contentText:SetPoint("TOPLEFT", icon, "TOPRIGHT", 15, 0)
+    contentText:SetPoint("TOPRIGHT", -20, -50)
+    contentText:SetWidth(480)
+    contentText:SetJustifyH("LEFT")
+    contentText:SetSpacing(3)
+    contentText:SetText("")
+    tutorialFrame.contentText = contentText
+    
+    -- Text input for pledge
+    local editBox = CreateFrame("EditBox", nil, tutorialFrame, "InputBoxTemplate")
+    editBox:SetSize(550, 30)
+    editBox:SetPoint("BOTTOM", 0, 80)
+    editBox:SetAutoFocus(false)
+    editBox:Hide()
+    editBox:SetScript("OnTextChanged", function(self)
+        local slide = tutorialSlides[currentSlide]
+        if slide and slide.requireText then
+            if self:GetText():upper() == slide.requireText:upper() then
+                tutorialFrame.nextBtn:Enable()
+            else
+                tutorialFrame.nextBtn:Disable()
+            end
+        end
+    end)
+    editBox:SetScript("OnEnterPressed", function()
+        if tutorialFrame.nextBtn:IsEnabled() then
+            tutorialFrame.nextBtn:Click()
+        end
+    end)
+    tutorialFrame.editBox = editBox
+    
+    local editLabel = tutorialFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    editLabel:SetPoint("BOTTOM", editBox, "TOP", 0, 5)
+    editLabel:SetText("Type 'I AGREE' to continue:")
+    editLabel:SetTextColor(1, 0.82, 0)
+    editLabel:Hide()
+    tutorialFrame.editLabel = editLabel
+    
+    editBox:SetScript("OnShow", function()
+        editLabel:Show()
+    end)
+    editBox:SetScript("OnHide", function()
+        editLabel:Hide()
+    end)
+    
+    -- Page counter
+    local pageText = tutorialFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    pageText:SetPoint("BOTTOM", 0, 50)
+    pageText:SetTextColor(0.7, 0.7, 0.7)
+    tutorialFrame.pageText = pageText
+    
+    -- Back button
+    local backBtn = CreateFrame("Button", nil, tutorialFrame, "UIPanelButtonTemplate")
+    backBtn:SetSize(100, 30)
+    backBtn:SetPoint("BOTTOMLEFT", 20, 15)
+    backBtn:SetText("← Back")
+    backBtn:SetScript("OnClick", function()
+        if currentSlide > 1 then
+            currentSlide = currentSlide - 1
+            ShowSlide(currentSlide)
+        end
+    end)
+    tutorialFrame.backBtn = backBtn
+    
+    -- Next button
+    local nextBtn = CreateFrame("Button", nil, tutorialFrame, "UIPanelButtonTemplate")
+    nextBtn:SetSize(150, 30)
+    nextBtn:SetPoint("BOTTOMRIGHT", -20, 15)
+    nextBtn:SetText("Next →")
+    nextBtn:SetScript("OnClick", function()
+        currentSlide = currentSlide + 1
+        ShowSlide(currentSlide)
+    end)
+    tutorialFrame.nextBtn = nextBtn
+    
+    -- Progress bar
+    local progress = CreateFrame("StatusBar", nil, tutorialFrame)
+    progress:SetSize(560, 4)
+    progress:SetPoint("BOTTOM", 0, 55)
+    progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    progress:SetStatusBarColor(0, 0.8, 0)
+    progress:SetMinMaxValues(0, #tutorialSlides)
+    progress:SetValue(1)
+    tutorialFrame.progress = progress
+    
+    -- Hook slide change to update progress
+    local originalShowSlide = ShowSlide
+    ShowSlide = function(index)
+        originalShowSlide(index)
+        progress:SetValue(index)
+    end
+    
+    -- Close button (hidden by default, only on last slide)
+    tutorialFrame.CloseButton:SetScript("OnClick", function()
+        db.tutorialCompleted = TUTORIAL_VERSION
+        tutorialFrame:Hide()
+        self:ShowToSDialog()
+    end)
+    
+    -- Show first slide
+    ShowSlide(1)
+    
+    tutorialFrame:Show()
 end
 
 -- Show ToS agreement dialog

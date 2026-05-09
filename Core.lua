@@ -1,14 +1,14 @@
 --[[
     AzerothDash - Core Module
     The "DoorDash" of Azeroth
-    Version: 2.0.0
+    Version: 1.0.0
 ]]
 
 local addonName, AzerothDash = ...
 _G.AzerothDash = AzerothDash
 
 -- Version info
-AzerothDash.VERSION = "2.0.0"
+AzerothDash.VERSION = "1.0.0"
 AzerothDash.DATA_VERSION = 2
 
 -- Constants
@@ -28,6 +28,10 @@ AzerothDash.CONSTANTS = {
     MAX_ORDERS_PER_DAY = 50,          -- Max 50 orders per day
     MIN_ORDER_VALUE = 1,              -- Minimum 1g to prevent spam
     AUDIT_LOG_SIZE = 100,             -- Keep last 100 transactions
+    
+    -- Transaction timeout (how long dasher has to deliver)
+    TRANSACTION_TIMEOUT = 1800,       -- 30 minutes to complete delivery
+    CONFIRMATION_TIMEOUT = 300,       -- 5 minutes for requester to confirm
 }
 
 -- Runtime state
@@ -37,6 +41,18 @@ AzerothDash.state = {
     lastSendTime = 0,
     isLoaded = false,
     debugMode = false,
+    tosDeclined = false,
+}
+
+-- Transaction status constants
+AzerothDash.STATUS = {
+    PENDING = "PENDING",           -- Order broadcast, waiting for dasher
+    ACCEPTED = "ACCEPTED",       -- Dasher accepted, in progress
+    DELIVERED = "DELIVERED",     -- Dasher marked as delivered
+    COMPLETED = "COMPLETED",     -- Requester confirmed receipt
+    DISPUTED = "DISPUTED",       -- Requester reported issue
+    CANCELLED = "CANCELLED",     -- Requester cancelled
+    EXPIRED = "EXPIRED",         -- Dasher didn't deliver in time
 }
 
 -- Event frame
@@ -130,6 +146,9 @@ function AzerothDash.events:PLAYER_LOGIN()
     if self.modules.ToS then
         self.modules.ToS:OnLogin()
     end
+    if self.modules.Transactions then
+        self.modules.Transactions:OnLogin()
+    end
     if self.modules.Network then
         self.modules.Network:OnLogin()
     end
@@ -175,9 +194,29 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         else
             AzerothDash:Print("Usage: /ad report PlayerName-Realm reason")
         end
+    elseif command == "tutorial" then
+        if AzerothDash.modules.ToS then
+            AzerothDash.modules.ToS:ShowTutorial()
+        end
     elseif command == "limits" or command == "rate" then
         if AzerothDash.modules.ToS then
             AzerothDash.modules.ToS:ShowRateLimits()
+        end
+    elseif command == "available" or command == "avail" then
+        -- Toggle courier availability
+        local db = AzerothDash.db.profile.courier
+        db.available = not db.available
+        if db.available then
+            AzerothDash:Print("|cff00ff00You are now AVAILABLE for deliveries!|r")
+            if AzerothDash.modules.UI then
+                AzerothDash.modules.UI:SetupCourierNotifications()
+            end
+        else
+            AzerothDash:Print("|cffff0000You are now OFFLINE for deliveries.|r")
+        end
+        -- Update checkbox if visible
+        if AzerothDash.modules.UI and AzerothDash.modules.UI.UpdateCourierIndicator then
+            AzerothDash.modules.UI:UpdateCourierIndicator()
         end
     elseif command == "audit" then
         if AzerothDash.state.debugMode then
@@ -197,8 +236,10 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         AzerothDash:Print("|cffffd100AzerothDash Commands:|r")
         AzerothDash:Print("/ad - Toggle main window")
         AzerothDash:Print("/ad config - Open settings")
+        AzerothDash:Print("/ad available - Toggle courier availability")
         AzerothDash:Print("/ad limits - Show rate limits")
-        AzerothDash:Print("/ad report PlayerName reason - Report suspicious player")
+        AzerothDash:Print("/ad report PlayerName reason - Report a suspicious player")
+        AzerothDash:Print("/ad tutorial - Replay the tutorial")
         AzerothDash:Print("/ad debug - Toggle debug mode")
         AzerothDash:Print("/ad reset - Reset all settings")
     else
