@@ -14,8 +14,8 @@ local charDB
 
 -- Message types for transaction protocol
 local MSG_TYPES = {
-    ACCEPT = "ACC",      -- Dasher accepts order
-    DELIVERED = "DLV",   -- Dasher marked as delivered
+    ACCEPT = "ACC",      -- Courier accepts order
+    DELIVERED = "DLV",   -- Courier marked as delivered
     CONFIRM = "CNF",     -- Requester confirms receipt
     DISPUTE = "DSP",     -- Requester reports issue
     CANCEL = "CAN",      -- Requester cancels
@@ -100,7 +100,7 @@ function Transactions:OnTransactionMessage(prefix, msg, channel, sender)
             self:ProcessAccept(transaction, sender, data)
         end
     elseif msgType == MSG_TYPES.DELIVERED then
-        -- Verify sender is our dasher
+        -- Verify sender is our courier
         if transaction.isRequester
             and transaction.status == STATUS.ACCEPTED
             and transaction.partner == sender then
@@ -166,7 +166,7 @@ function Transactions:CreateTransaction(order, isRequester)
     return tx
 end
 
--- Dasher accepts an order
+-- Courier accepts an order
 function Transactions:AcceptOrder(orderIndex)
     local order = AzerothDash.state.availableOrders[orderIndex]
     if not order then
@@ -175,7 +175,7 @@ function Transactions:AcceptOrder(orderIndex)
     end
     
     if order.sender == UnitName("player") then
-        AzerothDash:Print("You cannot dash for yourself!")
+        AzerothDash:Print("You cannot courier your own order!")
         return false
     end
     
@@ -203,7 +203,7 @@ function Transactions:AcceptOrder(orderIndex)
     -- Remove from available orders
     table.remove(AzerothDash.state.availableOrders, orderIndex)
     
-    -- Update UI - switch to Active tab so dasher can see progress
+    -- Update UI - switch to Active tab so courier can see progress
     if AzerothDash.modules.UI then
         AzerothDash.modules.UI:UpdateOrderList()
         AzerothDash.modules.UI:UpdateActiveTransactions()
@@ -214,7 +214,7 @@ function Transactions:AcceptOrder(orderIndex)
     return true
 end
 
--- Dasher marks order as delivered
+-- Courier marks order as delivered
 function Transactions:MarkDelivered(orderID)
     local tx = self:FindTransaction(orderID)
     if not tx or tx.isRequester then
@@ -253,10 +253,10 @@ function Transactions:ConfirmReceipt(orderID)
         return false
     end
     
-    -- SECURITY: Only allow confirm after dasher has marked delivered
+    -- SECURITY: Only allow confirm after courier has marked delivered
     -- Prevents requester from prematurely closing a transaction
     if tx.status ~= STATUS.DELIVERED then
-        AzerothDash:Print("Cannot confirm - please wait for the dasher to mark the order delivered first.")
+        AzerothDash:Print("Cannot confirm - please wait for the courier to mark the order delivered first.")
         return false
     end
     
@@ -268,10 +268,10 @@ function Transactions:ConfirmReceipt(orderID)
     charDB.requestStats.fulfilled = (charDB.requestStats.fulfilled or 0) + 1
     charDB.requestStats.spent = (charDB.requestStats.spent or 0) + tx.reward
     
-    -- Update reputation for the dasher
+    -- Update reputation for the courier
     self:UpdateReputation(tx.partner, true)
     
-    -- Notify dasher
+    -- Notify courier
     self:SendTransactionUpdate(orderID, MSG_TYPES.CONFIRM, "")
     if tx.partner then
         self:SendWhisper(tx.partner, "Thank you for the delivery! Payment sent. Transaction completed.")
@@ -307,7 +307,7 @@ function Transactions:ReportIssue(orderID, reason)
     -- Update reputation negatively
     self:UpdateReputation(tx.partner, false)
     
-    -- Notify dasher
+    -- Notify courier
     self:SendTransactionUpdate(orderID, MSG_TYPES.DISPUTE, reason or "Issue reported")
     if tx.partner then
         self:SendWhisper(tx.partner, "The requester has reported an issue with the delivery. Reason: " .. (reason or "Not specified"))
@@ -339,7 +339,7 @@ function Transactions:CancelOrder(orderID)
     tx.status = STATUS.CANCELLED
     tx.updatedAt = GetTime()
     
-    -- Notify dasher if accepted
+    -- Notify courier if accepted
     if tx.partner then
         self:SendTransactionUpdate(orderID, MSG_TYPES.CANCEL, "")
         self:SendWhisper(tx.partner, "The requester has cancelled the order. No payment needed.")
@@ -361,13 +361,13 @@ function Transactions:CancelOrder(orderID)
 end
 
 -- Process incoming accept notification
-function Transactions:ProcessAccept(tx, dasher, data)
-    tx.partner = dasher
+function Transactions:ProcessAccept(tx, courier, data)
+    tx.partner = courier
     tx.status = STATUS.ACCEPTED
     tx.acceptedAt = GetTime()
     tx.updatedAt = GetTime()
     
-    AzerothDash:Print(dasher .. " has accepted your order and is on their way!")
+    AzerothDash:Print(courier .. " has accepted your order and is on their way!")
     
     if AzerothDash.db.global.soundEnabled then
         PlaySound(SOUNDKIT.READY_CHECK, "Master") -- READY_CHECK exists since TBC (patch 2.0)
@@ -381,12 +381,12 @@ function Transactions:ProcessAccept(tx, dasher, data)
 end
 
 -- Process delivered notification
-function Transactions:ProcessDelivered(tx, dasher)
+function Transactions:ProcessDelivered(tx, courier)
     tx.status = STATUS.DELIVERED
     tx.deliveredAt = GetTime()
     tx.updatedAt = GetTime()
     
-    AzerothDash:Print(dasher .. " has marked the order as delivered!")
+    AzerothDash:Print(courier .. " has marked the order as delivered!")
     AzerothDash:Print("Please confirm receipt after checking the items, or report an issue if there's a problem.")
     
     if AzerothDash.db.global.soundEnabled then
@@ -407,7 +407,7 @@ function Transactions:ProcessConfirm(tx, requester)
     tx.completedAt = GetTime()
     tx.updatedAt = GetTime()
     
-    -- Update stats (Dasher side: track deliveries completed and gold earned)
+    -- Update stats (Courier side: track deliveries completed and gold earned)
     charDB.deliveryStats.completed = (charDB.deliveryStats.completed or 0) + 1
     charDB.deliveryStats.earned = (charDB.deliveryStats.earned or 0) + tx.reward
     
@@ -463,17 +463,17 @@ function Transactions:ProcessCancel(tx, requester)
 end
 
 -- Handle accept notification for our pending orders
-function Transactions:HandleAcceptNotification(orderID, dasher, data)
+function Transactions:HandleAcceptNotification(orderID, courier, data)
     -- Find in myOrders
     for _, order in ipairs(AzerothDash.state.myOrders) do
         if order.orderID == orderID then
             -- Create transaction record
             local tx = self:CreateTransaction(order, true)
-            tx.partner = dasher
+            tx.partner = courier
             tx.status = STATUS.ACCEPTED
             tx.acceptedAt = GetTime()
             
-            AzerothDash:Print(dasher .. " has accepted your order and is on their way!")
+            AzerothDash:Print(courier .. " has accepted your order and is on their way!")
             
             if AzerothDash.db.global.soundEnabled then
                 PlaySound(SOUNDKIT.READY_CHECK, "Master")

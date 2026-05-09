@@ -4,7 +4,7 @@ An in-game item delivery and courier service addon for Burning Crusade Anniversa
 
 ## Features
 
-- **Request Items**: Drag items from your bags, set a tip amount, and broadcast your order to dashers in your area
+- **Request Items**: Drag items from your bags, set a tip amount, and broadcast your order to available couriers
 - **Deliver Orders**: Browse available orders in your zone, accept deliveries, and earn gold
 - **Courier Availability**: Mark yourself as available for deliveries and get notified of new orders
 - **Transaction Verification**: Multi-step confirmation ensures both parties complete the trade
@@ -14,7 +14,7 @@ An in-game item delivery and courier service addon for Burning Crusade Anniversa
 - **Reputation System**: Build trust scores based on completed/failed transactions
 - **Community Sharing**: Export/import reputation lists to share with guild/friends
 - **Block List**: Block players you don't want to trade with
-- **Delivery Confirmation**: Requester confirms receipt, dasher marks delivered
+- **Delivery Confirmation**: Requester confirms receipt, courier marks delivered
 - **Dispute Resolution**: Report issues with deliveries for mediation
 - **Scalable UI**: Automatically scales based on screen resolution
 - **Minimap Button**: Quick access with draggable minimap integration
@@ -73,8 +73,8 @@ You can replay the tutorial anytime with `/ad tutorial`
 Both parties must confirm for a transaction to complete:
 
 1. **Requester** broadcasts order → Status: `PENDING`
-2. **Dasher** clicks "Dash" → Status: `ACCEPTED` (whisper sent)
-3. **Dasher** delivers items via trade → Clicks "Mark Delivered" → Status: `DELIVERED`
+2. **Courier** clicks "Accept" → Status: `ACCEPTED` (whisper sent)
+3. **Courier** delivers items via trade → Clicks "Mark Delivered" → Status: `DELIVERED`
 4. **Requester** receives popup notification
 5. **Requester** clicks "Confirm" → Status: `COMPLETED` (gold exchanged)
 

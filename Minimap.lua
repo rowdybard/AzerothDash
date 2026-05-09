@@ -3,14 +3,18 @@
 ]]
 
 local _, AzerothDash = ...
+
+-- Capture the WoW Minimap frame BEFORE the local module shadows it
+local WoWMinimap = Minimap
+
 local Minimap = {}
 AzerothDash:RegisterModule("Minimap", Minimap)
 
 -- Constants
-local BUTTON_SIZE = 31
-local ICON_SIZE = 20
-local BORDER_SIZE = 53
+local BUTTON_SIZE = 32
+local ICON_SIZE   = 28
 local DEFAULT_RADIUS = 80
+local ICON_PATH = "Interface\\AddOns\\AzerothDash\\icon.png"
 
 -- Local references
 local db
@@ -22,7 +26,7 @@ end
 
 function Minimap:OnLogin()
     db = AzerothDash.db.profile.minimap
-    
+
     if not db.hide then
         self:CreateButton()
     end
@@ -33,53 +37,52 @@ function Minimap:CreateButton()
         button:Show()
         return
     end
-    
-    -- Create button frame
-    button = CreateFrame("Button", "AzerothDashMinimapButton", Minimap)
+
+    -- Parent to the WoW Minimap frame so it moves with it
+    button = CreateFrame("Button", "AzerothDashMinimapButton", WoWMinimap)
     button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
     button:SetFrameLevel(8)
     button:SetFrameStrata("MEDIUM")
     button:EnableMouse(true)
-    
-    -- Border texture
-    local border = button:CreateTexture(nil, "OVERLAY")
-    border:SetSize(BORDER_SIZE, BORDER_SIZE)
-    border:SetPoint("TOPLEFT", -11, 10)
-    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    button.border = border
-    
-    -- Icon texture
+
+    -- Rounded icon using the addon PNG with a circular mask
     local icon = button:CreateTexture(nil, "BACKGROUND")
     icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetPoint("CENTER")
-    icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_10_Green")
-    icon:SetMask("Interface\\Minimap\\UI-Minimap-Background")
+    icon:SetTexture(ICON_PATH)
+    icon:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
     button.icon = icon
-    
-    -- Highlight
+
+    -- Thin circular border so it looks like other minimap buttons
+    local border = button:CreateTexture(nil, "OVERLAY")
+    border:SetSize(BUTTON_SIZE + 4, BUTTON_SIZE + 4)
+    border:SetPoint("CENTER")
+    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    button.border = border
+
+    -- Highlight ring on mouse-over
     local highlight = button:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetSize(BORDER_SIZE, BORDER_SIZE)
-    highlight:SetPoint("TOPLEFT", -11, 10)
+    highlight:SetSize(BUTTON_SIZE + 4, BUTTON_SIZE + 4)
+    highlight:SetPoint("CENTER")
     highlight:SetTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
     highlight:SetBlendMode("ADD")
     button.highlight = highlight
-    
-    -- Scripts
+
+    -- Left click = open/close UI, Right click = lock/unlock dragging
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    
+
     button:SetScript("OnClick", function(self, btn)
         if btn == "LeftButton" then
             if AzerothDash.modules.UI then
                 AzerothDash.modules.UI:ToggleMainFrame()
             end
         else
-            -- Right click - toggle minimap lock
             db.lock = not db.lock
             GameTooltip:Hide()
-            AzerothDash:Print(db.lock and "Minimap button locked" or "Minimap button unlocked")
+            AzerothDash:Print(db.lock and "Minimap button locked." or "Minimap button unlocked.")
         end
     end)
-    
+
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine(AzerothDash:L("TOOLTIP_MINIMAP"), 1, 0.82, 0)
@@ -87,62 +90,61 @@ function Minimap:CreateButton()
         GameTooltip:AddLine(AzerothDash:L("TOOLTIP_MINIMAP_RIGHT"), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
-    
+
     button:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    
-    -- Dragging
+
+    -- Dragging around the minimap edge
     button:SetMovable(true)
     button:RegisterForDrag("LeftButton")
-    
+
     button:SetScript("OnDragStart", function(self)
         if not db.lock then
             self.isDragging = true
             self:LockHighlight()
         end
     end)
-    
+
     button:SetScript("OnDragStop", function(self)
         self.isDragging = false
         self:UnlockHighlight()
+        self:UpdatePosition()
     end)
-    
+
     button:SetScript("OnUpdate", function(self)
         if self.isDragging and not db.lock then
             local xpos, ypos = GetCursorPosition()
-            local xmin, ymin = Minimap:GetLeft(), Minimap:GetBottom()
             local scale = UIParent:GetEffectiveScale()
-            
-            xpos = (xmin - xpos / scale + 70) / Minimap:GetEffectiveScale()
-            ypos = (ypos / scale - ymin - 70) / Minimap:GetEffectiveScale()
-            
-            local angle = math.atan2(ypos, xpos)
-            db.angle = angle
-            
+            local xmin  = WoWMinimap:GetLeft()
+            local ymin  = WoWMinimap:GetBottom()
+            local mmScale = WoWMinimap:GetEffectiveScale()
+
+            xpos = (xmin - xpos / scale + 70) / mmScale
+            ypos = (ypos / scale - ymin - 70) / mmScale
+
+            db.angle = math.atan2(ypos, xpos)
             self:UpdatePosition()
         end
     end)
-    
-    -- Position update function
+
+    -- Snap button to the minimap edge at the stored angle
     button.UpdatePosition = function(self)
-        local angle = db.angle or 0
+        local angle  = db.angle  or 0
         local radius = db.radius or DEFAULT_RADIUS
-        local x = math.cos(angle) * radius
-        local y = math.sin(angle) * radius
-        self:SetPoint("CENTER", Minimap, "CENTER", x, y)
+        self:ClearAllPoints()
+        self:SetPoint("CENTER", WoWMinimap, "CENTER",
+            math.cos(angle) * radius,
+            math.sin(angle) * radius)
     end
-    
-    -- Initial position
+
     button:UpdatePosition()
-    
+
     AzerothDash:Debug("Minimap button created")
 end
 
 function Minimap:UpdatePosition()
-    if button then
-        button:UpdatePosition()
-    end
+    if button then button:UpdatePosition() end
 end
 
 function Minimap:Show()
@@ -155,9 +157,7 @@ function Minimap:Show()
 end
 
 function Minimap:Hide()
-    if button then
-        button:Hide()
-    end
+    if button then button:Hide() end
     db.hide = true
 end
 

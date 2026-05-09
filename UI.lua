@@ -659,7 +659,7 @@ function UI:GetOrderRow(index)
     rewardText:SetJustifyH("RIGHT")
     row.rewardText = rewardText
     
-    -- Note text (for dasher to see requester notes)
+    -- Note text (for courier to see requester notes)
     local noteText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     noteText:SetPoint("TOPLEFT", itemText, "BOTTOMLEFT", 0, -2)
     noteText:SetWidth(350)
@@ -674,9 +674,9 @@ function UI:GetOrderRow(index)
     locText:SetJustifyH("LEFT")
     row.locText = locText
     
-    -- Dash button
+    -- Accept button
     local dashBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    dashBtn:SetSize(60, 26)
+    dashBtn:SetSize(70, 26)
     dashBtn:SetPoint("BOTTOMRIGHT", -10, 8)
     dashBtn:SetText(L["DELIVER_BUTTON"])
     row.dashBtn = dashBtn
@@ -1063,7 +1063,7 @@ function UI:UpdateActiveTransactions()
         row.statusText:SetText("|cff" .. statusColor .. statusText .. "|r")
         
         -- Partner
-        local role = tx.isRequester and "Dasher: " or "Requester: "
+        local role = tx.isRequester and "Courier: " or "Requester: "
         local partnerName = tx.partner or "Unknown"
         row.partnerText:SetText(role .. partnerName)
         
@@ -1135,7 +1135,7 @@ function UI:AddActionButtons(container, tx)
             table.insert(buttons, disputeBtn)
         end
     else
-        -- Dasher actions
+        -- Courier actions
         if tx.status == STATUS.ACCEPTED then
             -- Can mark delivered
             local btn = CreateFrame("Button", nil, container, "UIPanelButtonTemplate")

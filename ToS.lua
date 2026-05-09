@@ -55,7 +55,7 @@ This addon helps you get items delivered anywhere in Azeroth!
 
 |cff00ff00Here's the simple version:|r
 • You need an item but don't want to travel? Ask for delivery!
-• You want to make gold by helping others? Be a dasher!
+• You want to make gold by helping others? Be a courier!
 • Everyone wins!
 
 Think of it like this: You're at home and want pizza. Instead of going to the pizza place, you pay someone to bring it to you. Same idea, but with WoW items!
@@ -96,10 +96,10 @@ Click "Next" to learn how it works!
 
 |cff00ff00For Requesters (People Ordering):|r
 • Only pay AFTER you get the item (in the trade window)
-• The dasher will mark "Delivered" - you click "Confirm" when you have the item
+• The courier will mark "Delivered" - you click "Confirm" when you have the item
 • If something goes wrong, click "Issue" to report it
 
-|cff00ff00For Dashers (People Delivering):|r
+|cff00ff00For Couriers (People Delivering):|r
 • Only give the item AFTER they put gold in the trade window
 • Mark "Delivered" only after you've actually traded
 • The requester must confirm - that's your proof!
@@ -501,38 +501,6 @@ function ToS:CanCreateOrder(goldAmount)
         return false
     end
     
-    -- Check gold limits
-    if goldAmount > CONSTANTS.MAX_GOLD_PER_ORDER then
-        AzerothDash:Print(string.format(L["TOS_MAX_GOLD"] or "Order value exceeds maximum of %dg per order (ToS compliance).", CONSTANTS.MAX_GOLD_PER_ORDER))
-        return false
-    end
-    
-    if goldAmount < CONSTANTS.MIN_ORDER_VALUE then
-        AzerothDash:Print(string.format(L["TOS_MIN_GOLD"] or "Minimum order value is %dg.", CONSTANTS.MIN_ORDER_VALUE))
-        return false
-    end
-    
-    -- Reset counters if needed
-    self:ResetRateLimitsIfNeeded()
-    
-    -- Check hourly order limit
-    if charDB.rateLimit.ordersThisHour >= CONSTANTS.MAX_ORDERS_PER_HOUR then
-        AzerothDash:Print(L["TOS_HOUR_LIMIT"] or "Hourly order limit reached. Please wait before creating more orders.")
-        return false
-    end
-    
-    -- Check hourly gold limit
-    if (charDB.rateLimit.goldThisHour + goldAmount) > CONSTANTS.MAX_GOLD_PER_HOUR then
-        AzerothDash:Print(L["TOS_GOLD_LIMIT"] or "Hourly gold movement limit approaching. Please wait before creating high-value orders.")
-        return false
-    end
-    
-    -- Check daily order limit
-    if charDB.rateLimit.ordersToday >= CONSTANTS.MAX_ORDERS_PER_DAY then
-        AzerothDash:Print(L["TOS_DAILY_LIMIT"] or "Daily order limit reached. Please try again tomorrow.")
-        return false
-    end
-    
     return true
 end
 
@@ -656,11 +624,6 @@ function ToS:ShouldShowOrder(order)
         end
     end
     
-    -- Check gold limits
-    if order.reward > CONSTANTS.MAX_GOLD_PER_ORDER then
-        AzerothDash:Debug("Filtered order exceeding gold limit from", order.sender)
-        return false
-    end
     
     return true
 end

@@ -21,15 +21,9 @@ AzerothDash.CONSTANTS = {
     MAX_ITEMS_PER_ORDER = 6,
     UI_SCALE_BASE = 768,   -- Reference resolution for scaling
     
-    -- ToS Compliance Limits (Anti-gold laundering measures)
-    MAX_GOLD_PER_ORDER = 5000,        -- Max 5000g per order
-    MAX_ORDERS_PER_HOUR = 10,         -- Max 10 orders per hour per player
-    MAX_GOLD_PER_HOUR = 20000,        -- Max 20k gold movement per hour
-    MAX_ORDERS_PER_DAY = 50,          -- Max 50 orders per day
-    MIN_ORDER_VALUE = 1,              -- Minimum 1g to prevent spam
     AUDIT_LOG_SIZE = 100,             -- Keep last 100 transactions
     
-    -- Transaction timeout (how long dasher has to deliver)
+    -- Transaction timeout (how long courier has to deliver)
     TRANSACTION_TIMEOUT = 1800,       -- 30 minutes to complete delivery
     CONFIRMATION_TIMEOUT = 300,       -- 5 minutes for requester to confirm
 }
