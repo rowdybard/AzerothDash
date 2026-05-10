@@ -173,7 +173,26 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
     local command, rest = msg:match("^(%S*)%s*(.-)$")
     command = command:lower()
     
-    if command == "debug" then
+    if command == "status" then
+        local p = DEFAULT_CHAT_FRAME
+        p:AddMessage("|cffffd100AzerothDash Status Report:|r")
+        p:AddMessage("  db: " .. tostring(AzerothDash.db and "OK" or "NIL"))
+        p:AddMessage("  db.profile: " .. tostring(AzerothDash.db and AzerothDash.db.profile and "OK" or "NIL"))
+        p:AddMessage("  strings: " .. tostring(AzerothDash.strings and "OK" or "NIL"))
+        for name, mod in pairs(AzerothDash.modules) do
+            local hasOnLogin = mod.OnLogin and "yes" or "NO"
+            p:AddMessage("  module [" .. name .. "] OnLogin=" .. hasOnLogin)
+        end
+        local UI = AzerothDash.modules.UI
+        p:AddMessage("  UI module: " .. tostring(UI and "OK" or "NIL"))
+        p:AddMessage("  UI.mainFrame: " .. tostring(UI and UI.mainFrame and "OK" or "NIL"))
+        p:AddMessage("  UI:GetMainFrame(): " .. tostring(UI and UI.GetMainFrame and tostring(UI:GetMainFrame()) or "NIL"))
+        -- Try calling OnLogin manually with full error
+        if UI then
+            local ok, err = pcall(function() UI:OnLogin() end)
+            p:AddMessage("  UI:OnLogin() test: " .. (ok and "|cff00ff00OK|r" or "|cffff0000FAIL: " .. tostring(err) .. "|r"))
+        end
+    elseif command == "debug" then
         AzerothDash.state.debugMode = not AzerothDash.state.debugMode
         AzerothDash:Print("Debug mode " .. (AzerothDash.state.debugMode and "enabled" or "disabled"))
     elseif command == "reset" then
@@ -241,11 +260,24 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         AzerothDash:Print("/ad debug - Toggle debug mode")
         AzerothDash:Print("/ad reset - Reset all settings")
     else
-        -- Toggle main window
-        if AzerothDash.modules.UI and AzerothDash.modules.UI:GetMainFrame() then
-            AzerothDash.modules.UI:ToggleMainFrame()
+        -- Toggle main window, auto-init if not ready yet
+        local UI = AzerothDash.modules.UI
+        if UI then
+            if not UI:GetMainFrame() then
+                -- UI didn't initialize at login, try now
+                local ok, err = pcall(function() UI:OnLogin() end)
+                if not ok then
+                    AzerothDash:Print("UI init failed: " .. tostring(err))
+                    return
+                end
+            end
+            if UI:GetMainFrame() then
+                UI:ToggleMainFrame()
+            else
+                AzerothDash:Print("UI frame still nil after init — check for red errors above.")
+            end
         else
-            AzerothDash:Print("UI frame not created yet — check chat for red error messages above.")
+            AzerothDash:Print("UI module not registered.")
         end
     end
 end

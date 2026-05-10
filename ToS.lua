@@ -177,7 +177,7 @@ This is your digital handshake. Be a good person, and everyone benefits!
 function ToS:ShowTutorial()
     local currentSlide = 1
     local tutorialFrame = nil
-    local L = AzerothDash.L
+    local L = AzerothDash.strings
     
     local function ShowSlide(index)
         local slide = tutorialSlides[index]
@@ -382,7 +382,7 @@ function ToS:ShowToSDialog()
     dialog:SetScript("OnDragStart", dialog.StartMoving)
     dialog:SetScript("OnDragStop", dialog.StopMovingOrSizing)
     
-    local L = AzerothDash.L
+    local L = AzerothDash.strings
     
     -- Title
     local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
@@ -493,7 +493,7 @@ end
 
 -- Check if order is allowed
 function ToS:CanCreateOrder(goldAmount)
-    local L = AzerothDash.L
+    local L = AzerothDash.strings
     
     -- Check if ToS was declined
     if AzerothDash.state.tosDeclined then

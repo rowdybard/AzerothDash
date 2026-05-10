@@ -143,11 +143,23 @@ function AzerothDash:HasItemInBags(itemLink, count)
     count = count or 1
     local total = 0
     
+    -- Support both retail (C_Container) and classic (globals)
+    local getNumSlots = C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
+    local getItemLink = C_Container and C_Container.GetContainerItemLink or GetContainerItemLink
+    local getItemInfo = C_Container and C_Container.GetContainerItemInfo or GetContainerItemInfo
+    
     for bag = 0, NUM_BAG_SLOTS do
-        for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
-            if itemInfo and itemInfo.hyperlink == itemLink then
-                total = total + (itemInfo.stackCount or 1)
+        for slot = 1, getNumSlots(bag) do
+            local link = getItemLink(bag, slot)
+            if link == itemLink then
+                if C_Container and C_Container.GetContainerItemInfo then
+                    local info = getItemInfo(bag, slot)
+                    total = total + (info and info.stackCount or 1)
+                else
+                    -- Classic returns: texture, count, locked, quality, readable, lootable, link
+                    local _, cnt = getItemInfo(bag, slot)
+                    total = total + (cnt or 1)
+                end
                 if total >= count then
                     return true
                 end

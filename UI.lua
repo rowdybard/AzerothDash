@@ -26,6 +26,26 @@ function UI:Init()
     -- Delayed until login
 end
 
+-- Position management (moved here to ensure it's defined before OnLogin)
+function UI:RestorePosition()
+    if db and db.window and db.window.point then
+        mainFrame:ClearAllPoints()
+        mainFrame:SetPoint(db.window.point, UIParent, db.window.relPoint or db.window.point, db.window.x, db.window.y)
+    end
+end
+
+function UI:SavePosition()
+    local point, _, relPoint, x, y = mainFrame:GetPoint(1)
+    if point and db and db.window then
+        db.window.point = point
+        db.window.relPoint = relPoint
+        db.window.x = x
+        db.window.y = y
+        db.window.scale = mainFrame:GetScale() / scaleFactor
+    end
+end
+
+-- OnLogin defined early so it's available even if compilation stops later
 function UI:OnLogin()
     L = AzerothDash.strings    -- locale table set by LoadLocalization() before PLAYER_LOGIN fires
     db = AzerothDash.db.profile
@@ -90,7 +110,7 @@ function UI:CreateMainFrame()
     end)
     mainFrame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
-        self:SavePosition()
+        UI:SavePosition()
     end)
     
     -- Settings button
@@ -101,7 +121,7 @@ function UI:CreateMainFrame()
     settingsBtn:SetHighlightTexture("Interface\\WorldMap\\GearIcon")
     settingsBtn:GetHighlightTexture():SetBlendMode("ADD")
     settingsBtn:SetScript("OnClick", function()
-        self:OpenConfig()
+        UI:OpenConfig()
     end)
     settingsBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -1694,25 +1714,6 @@ StaticPopupDialogs["AZEROTHDASH_IMPORT_REP"] = {
     preferredIndex = 3,
 }
 
--- Position management
-function UI:SavePosition()
-    local point, _, relPoint, x, y = mainFrame:GetPoint(1)
-    if point and db and db.window then
-        db.window.point = point
-        db.window.relPoint = relPoint
-        db.window.x = x
-        db.window.y = y
-        db.window.scale = mainFrame:GetScale() / scaleFactor
-    end
-end
-
-function UI:RestorePosition()
-    if db and db.window and db.window.point then
-        mainFrame:ClearAllPoints()
-        mainFrame:SetPoint(db.window.point, UIParent, db.window.relPoint or db.window.point, db.window.x, db.window.y)
-    end
-end
-DEFAULT_CHAT_FRAME:AddMessage("AzerothDash: RestorePosition defined")
 
 -- Public methods
 function UI:ToggleMainFrame()
@@ -1738,5 +1739,3 @@ end
 function UI:GetMainFrame()
     return mainFrame
 end
-
-DEFAULT_CHAT_FRAME:AddMessage("AzerothDash: UI.lua loaded completely")

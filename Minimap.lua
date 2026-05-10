@@ -73,8 +73,14 @@ function Minimap:CreateButton()
 
     button:SetScript("OnClick", function(self, btn)
         if btn == "LeftButton" then
-            if AzerothDash.modules.UI then
-                AzerothDash.modules.UI:ToggleMainFrame()
+            local UI = AzerothDash.modules.UI
+            if UI then
+                if not UI:GetMainFrame() then
+                    pcall(function() UI:OnLogin() end)
+                end
+                if UI:GetMainFrame() then
+                    UI:ToggleMainFrame()
+                end
             end
         else
             db.lock = not db.lock
