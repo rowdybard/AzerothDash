@@ -1,4 +1,4 @@
-## Interface: 20504
+## Interface: 20505
 ## Title: AzerothDash
 ## Notes: Request item deliveries or earn gold as a courier in Azeroth. Safe, verified trades with reputation tracking. (Burning Crusade Classic)
 ## Author: AzerothDash Team

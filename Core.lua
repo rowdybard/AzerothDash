@@ -145,10 +145,20 @@ function AzerothDash.events:PLAYER_LOGIN()
     
     -- Initialize all modules (pcall so one crash doesn't block the rest)
     local function SafeInit(name, mod)
-        if not mod then return end
+        if not mod then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [" .. name .. "] SKIP: module nil|r")
+            return
+        end
+        if not mod.OnLogin then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [" .. name .. "] SKIP: OnLogin nil|r")
+            return
+        end
+        DEFAULT_CHAT_FRAME:AddMessage("|cff888888AzerothDash [" .. name .. "] calling OnLogin...|r")
         local ok, err = pcall(function() mod:OnLogin() end)
         if not ok then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [" .. name .. "] error:|r " .. tostring(err))
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000AzerothDash [" .. name .. "] FAIL:|r " .. tostring(err))
+        else
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00AzerothDash [" .. name .. "] OK|r")
         end
     end
     SafeInit("ToS",          self.modules.ToS)
@@ -173,7 +183,90 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
     local command, rest = msg:match("^(%S*)%s*(.-)$")
     command = command:lower()
     
-    if command == "status" then
+    if command == "nuclear" then
+        local p = DEFAULT_CHAT_FRAME
+        p:AddMessage("|cffff0000NUCLEAR TEST|r")
+        
+        -- Create the simplest possible frame WITH BackdropTemplate
+        local testFrame = CreateFrame("Frame", "AzerothDashTest", UIParent, "BackdropTemplate")
+        testFrame:SetSize(200, 200)
+        testFrame:SetPoint("CENTER")
+        testFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeSize = 16})
+        testFrame:SetBackdropColor(0, 0, 0, 0.8)
+        testFrame:EnableMouse(true)
+        testFrame:SetMovable(true)
+        testFrame:RegisterForDrag("LeftButton")
+        testFrame:SetScript("OnDragStart", testFrame.StartMoving)
+        testFrame:SetScript("OnDragStop", testFrame.StopMovingOrSizing)
+        
+        -- Close button
+        local close = CreateFrame("Button", nil, testFrame, "UIPanelCloseButton")
+        close:SetPoint("TOPRIGHT")
+        close:SetScript("OnClick", function() testFrame:Hide() end)
+        
+        -- Show button
+        local showBtn = CreateFrame("Button", nil, testFrame, "UIPanelButtonTemplate")
+        showBtn:SetSize(100, 30)
+        showBtn:SetPoint("CENTER")
+        showBtn:SetText("Show Main UI")
+        showBtn:SetScript("OnClick", function()
+            local UI = AzerothDash.modules.UI
+            if UI then
+                if not UI:GetMainFrame() then
+                    pcall(function() UI:OnLogin() end)
+                end
+                if UI:GetMainFrame() then
+                    UI:ToggleMainFrame()
+                    p:AddMessage("Main UI toggled!")
+                else
+                    p:AddMessage("|cffff0000Main UI still nil|r")
+                end
+            end
+        end)
+        
+        testFrame:Show()
+        p:AddMessage("Test frame shown. Click 'Show Main UI' to trigger the real UI.")
+        
+    elseif command == "trace" then
+        local p = DEFAULT_CHAT_FRAME
+        p:AddMessage("|cffffd100AzerothDash Trace:|r")
+        local UI = AzerothDash.modules.UI
+        if not UI then p:AddMessage("|cffff0000UI module nil|r") return end
+        
+        -- Step 1: Check what UI module has
+        p:AddMessage("Step 1 - UI methods:")
+        for k, v in pairs(UI) do
+            if type(v) == "function" then
+                p:AddMessage("  fn: " .. k)
+            end
+        end
+        
+        -- Step 2: Try CreateMainFrame directly
+        p:AddMessage("Step 2 - calling CreateMainFrame...")
+        UI.L = AzerothDash.strings
+        UI.db = AzerothDash.db.profile
+        local ok, err = pcall(function()
+            -- Set UI's locals via OnLogin's first part
+            UI:OnLogin()
+        end)
+        p:AddMessage("  OnLogin: " .. tostring(ok) .. " err=" .. tostring(err))
+        
+        -- Step 3: Check global frame
+        local globalFrame = _G["AzerothDashMainFrame"]
+        p:AddMessage("Step 3 - _G.AzerothDashMainFrame: " .. tostring(globalFrame))
+        if globalFrame then
+            p:AddMessage("  IsShown: " .. tostring(globalFrame:IsShown()))
+            p:AddMessage("  IsVisible: " .. tostring(globalFrame:IsVisible()))
+            p:AddMessage("  GetWidth: " .. tostring(globalFrame:GetWidth()))
+            p:AddMessage("  Trying Show()...")
+            globalFrame:Show()
+            p:AddMessage("  After Show, IsShown: " .. tostring(globalFrame:IsShown()))
+        end
+        
+        -- Step 4: GetMainFrame
+        p:AddMessage("Step 4 - UI:GetMainFrame(): " .. tostring(UI:GetMainFrame()))
+        p:AddMessage("Step 4 - UI.mainFrame: " .. tostring(UI.mainFrame))
+    elseif command == "status" then
         local p = DEFAULT_CHAT_FRAME
         p:AddMessage("|cffffd100AzerothDash Status Report:|r")
         p:AddMessage("  db: " .. tostring(AzerothDash.db and "OK" or "NIL"))
@@ -260,24 +353,21 @@ SlashCmdList["AZEROTHDASH"] = function(msg)
         AzerothDash:Print("/ad debug - Toggle debug mode")
         AzerothDash:Print("/ad reset - Reset all settings")
     else
-        -- Toggle main window, auto-init if not ready yet
+        local p = DEFAULT_CHAT_FRAME
         local UI = AzerothDash.modules.UI
-        if UI then
-            if not UI:GetMainFrame() then
-                -- UI didn't initialize at login, try now
-                local ok, err = pcall(function() UI:OnLogin() end)
-                if not ok then
-                    AzerothDash:Print("UI init failed: " .. tostring(err))
-                    return
-                end
-            end
-            if UI:GetMainFrame() then
-                UI:ToggleMainFrame()
-            else
-                AzerothDash:Print("UI frame still nil after init — check for red errors above.")
-            end
+        p:AddMessage("UI=" .. tostring(UI))
+        if not UI then p:AddMessage("UI MODULE NIL") return end
+        p:AddMessage("GetMainFrame=" .. tostring(UI:GetMainFrame()))
+        if not UI:GetMainFrame() then
+            local ok, err = pcall(function() UI:OnLogin() end)
+            p:AddMessage("OnLogin ok=" .. tostring(ok) .. " err=" .. tostring(err))
+            p:AddMessage("GetMainFrame after=" .. tostring(UI:GetMainFrame()))
+        end
+        if UI:GetMainFrame() then
+            UI:ToggleMainFrame()
+            p:AddMessage("ToggleMainFrame called")
         else
-            AzerothDash:Print("UI module not registered.")
+            p:AddMessage("STILL NIL")
         end
     end
 end

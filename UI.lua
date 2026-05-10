@@ -21,6 +21,9 @@ local currentTab = 1
 -- Scaling
 local scaleFactor = 1
 
+-- Backdrop template compatibility (Shadowlands+ retail and backports require it; older clients may not have it)
+local backdropTemplate = BackdropTemplateMixin and "BackdropTemplate" or nil
+
 -- Initialize module
 function UI:Init()
     -- Delayed until login
@@ -143,7 +146,7 @@ function UI:CreateRequestFrame()
     reqFrame:SetPoint("TOP", 0, -40)
     
     -- Header background
-    local headerBg = CreateFrame("Frame", nil, reqFrame, "BackdropTemplate")
+    local headerBg = CreateFrame("Frame", nil, reqFrame, backdropTemplate)
     headerBg:SetPoint("TOPLEFT", 10, -10)
     headerBg:SetPoint("TOPRIGHT", -10, -10)
     headerBg:SetHeight(100)
@@ -727,7 +730,7 @@ function UI:GetOrderRow(index)
         return dashFrame.rows[index]
     end
     
-    local row = CreateFrame("Frame", nil, dashFrame.content, "BackdropTemplate")
+    local row = CreateFrame("Frame", nil, dashFrame.content, backdropTemplate)
     row:SetSize(dashFrame.content:GetWidth(), 60)
     
     row:SetBackdrop({
@@ -1053,7 +1056,7 @@ function UI:GetActiveRow(index)
         return activeFrame.rows[index]
     end
     
-    local row = CreateFrame("Frame", nil, activeFrame.content, "BackdropTemplate")
+    local row = CreateFrame("Frame", nil, activeFrame.content, backdropTemplate)
     row:SetSize(activeFrame.content:GetWidth(), 80)
     
     row:SetBackdrop({
@@ -1436,7 +1439,7 @@ function UI:GetReputationRow(index)
         return reputationFrame.rows[index]
     end
     
-    local row = CreateFrame("Frame", nil, reputationFrame.content, "BackdropTemplate")
+    local row = CreateFrame("Frame", nil, reputationFrame.content, backdropTemplate)
     row:SetSize(reputationFrame.content:GetWidth(), 50)
     
     row:SetBackdrop({
@@ -1717,6 +1720,7 @@ StaticPopupDialogs["AZEROTHDASH_IMPORT_REP"] = {
 
 -- Public methods
 function UI:ToggleMainFrame()
+    mainFrame = mainFrame or UI.mainFrame
     if mainFrame:IsShown() then
         mainFrame:Hide()
     else
@@ -1737,5 +1741,6 @@ function UI:OpenConfig()
 end
 
 function UI:GetMainFrame()
+    mainFrame = mainFrame or UI.mainFrame or _G["AzerothDashMainFrame"]
     return mainFrame
 end
